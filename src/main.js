@@ -190,3 +190,5 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
   });
 
 })();
+
+//Probando git lichicabj
