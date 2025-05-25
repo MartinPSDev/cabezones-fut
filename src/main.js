@@ -78,20 +78,20 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
   app.stage.addChild(player);
 
   const head = new Sprite(headTexture);
-  player.addChild(head);
-
   const botin = new Sprite(botinTexture);
   botin.anchor.set(1, 1); // Anchor en el talón (esquina inferior derecha)
   
   // Escalar el botín a un tamaño más pequeño (70% del tamaño de la cabeza)
-  botin.width = head.width * 0.7;
-  botin.height = head.height * 0.7;
+  botin.width = head.width * 0.6;
+  botin.height = head.height * 0.6;
 
   // Ajustar la posición para mantener la alineación con la cabeza
-  botin.x = head.width - 2;
-  botin.y = head.height + 20; // Reducido de 30 a 20 para mantener la proporción
+  botin.x = head.width - 12;
+  botin.y = head.height + 19; 
 
+  // Agregar primero la bota (atrás) y luego la cabeza (adelante)
   player.addChild(botin);
+  player.addChild(head);
   
   // Animation properties
   // Modificar las propiedades de animación
@@ -102,14 +102,14 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
   let currentFrame = 0;
 
   // Nuevos parámetros de animación
-  const preparationFrames = 5;
-  const kickFrames = 15;
-  const restorationFrames = 5;
+  const preparationFrames = 4;
+  const kickFrames = 20;
+  const restorationFrames = 10;
   const totalFrames = preparationFrames + kickFrames + restorationFrames;
 
   // Ángulo inicial y rotación total (ajustados para movimiento hacia adelante)
   const startAngle = Math.PI / 2; // Comenzamos desde 90 grados
-  const totalRotation = Math.PI / 2; // Rotación total de 60 grados (positivo para ir hacia adelante)
+  const totalRotation = Math.PI / 5; // Rotación total (positivo para ir hacia adelante)
 
   // --- Keyboard Controls ---
   const keys = {};
@@ -143,8 +143,8 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
     currentFrame++;
 
     const maxHeight = 30;
-    const forwardDistance = 10;
-    const preparationPush = 60; // Desplazamiento inicial hacia adelante
+    const forwardDistance = 10; // Distancia hacia adelante
+    const preparationPush = 45; // Desplazamiento inicial hacia adelante
 
     if (currentFrame <= preparationFrames) {
     // Fase de preparación: solo empujar hacia adelante
@@ -158,12 +158,12 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
     // Fase de patada: parábola + rotación
     const kickProgress = (currentFrame - preparationFrames) / kickFrames;
 
-    const verticalOffset = 3 * maxHeight * kickProgress * (kickProgress - 1);
+    const verticalOffset = 4 * maxHeight * kickProgress * (kickProgress - 1);
     botin.y = originalBotinY + verticalOffset;
 
     botin.x = originalBotinX - preparationPush - (forwardDistance * kickProgress);
 
-    botin.rotation = originalBotinRotation + (Math.PI / 2) * Math.sin(kickProgress * Math.PI);
+    botin.rotation = originalBotinRotation + (Math.PI / 1.7) * Math.sin(kickProgress * Math.PI);
   }
 
     else if (currentFrame <= totalFrames) {
