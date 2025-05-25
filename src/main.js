@@ -71,10 +71,10 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
 
   // --- Player Setup ---
   const player = new Container();
-  player.x = app.screen.width / 2;
-  player.y = app.screen.height / 2;
+  player.x = app.screen.width / 2 + 250;
+  player.y = app.screen.height / 2 + 203;
   // Agregar escala al contenedor para hacer todo más grande
-  player.scale.set(1.5); // Aumenta el tamaño en un 50%
+  player.scale.set(1.4); // Aumenta el tamaño del jugador 
   app.stage.addChild(player);
 
   const head = new Sprite(headTexture);
@@ -114,23 +114,59 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
   // --- Keyboard Controls ---
   const keys = {};
   const playerSpeed = 5;
+  
+  // Jump physics variables
+  const originalPlayerY = player.y; // Posición inicial del suelo
+  let isJumping = false;
+  let jumpVelocity = 0;
+  const jumpPower = -7; // Velocidad inicial del salto (negativa para ir hacia arriba)
+  const gravity = 0.3; // Fuerza de gravedad
+  let jumpPressed = false; // Para detectar cuando se presiona la tecla por primera vez
 
   window.addEventListener("keydown", (e) => {
     keys[e.code] = true;
+    
+    // Detectar cuando se presiona ArrowUp por primera vez para saltar
+    if (e.code === "ArrowUp" && !jumpPressed && !isJumping) {
+      isJumping = true;
+      jumpVelocity = jumpPower;
+      jumpPressed = true;
+    }
   });
 
   window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
+    
+    // Resetear el estado de la tecla ArrowUp
+    if (e.code === "ArrowUp") {
+      jumpPressed = false;
+    }
   });
 
   app.ticker.add((ticker) => {
     const delta = ticker.deltaTime;
 
-    // Player movement
-    if (keys["ArrowUp"]) player.y -= playerSpeed * delta;
-    if (keys["ArrowDown"]) player.y += playerSpeed * delta;
+    // Player horizontal movement only
     if (keys["ArrowLeft"]) player.x -= playerSpeed * delta;
     if (keys["ArrowRight"]) player.x += playerSpeed * delta;
+    
+    // Jump physics
+    if (isJumping) {
+      player.y += jumpVelocity * delta;
+      jumpVelocity += gravity * delta; // Aplicar gravedad
+      
+      // Verificar si el jugador ha aterrizado
+      if (player.y >= originalPlayerY) {
+        player.y = originalPlayerY; // Asegurar que no pase del suelo
+        isJumping = false;
+        jumpVelocity = 0;
+      }
+    } else {
+      // Asegurar que el jugador no baje más de la línea inicial
+      if (player.y > originalPlayerY) {
+        player.y = originalPlayerY;
+      }
+    }
 
     // Iniciar animación con la barra espaciadora
     if (keys["Space"] && !isKicking) {
