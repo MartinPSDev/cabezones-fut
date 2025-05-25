@@ -73,40 +73,43 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
   const player = new Container();
   player.x = app.screen.width / 2;
   player.y = app.screen.height / 2;
+  // Agregar escala al contenedor para hacer todo más grande
+  player.scale.set(1.5); // Aumenta el tamaño en un 50%
   app.stage.addChild(player);
 
   const head = new Sprite(headTexture);
-  // Adjust anchor if needed, e.g., head.anchor.set(0.5);
   player.addChild(head);
 
   const botin = new Sprite(botinTexture);
   botin.anchor.set(1, 1); // Anchor en el talón (esquina inferior derecha)
   
-  // Escalar el botín al tamaño de la cabeza
-  botin.width = head.width;
-  botin.height = head.height;
+  // Escalar el botín a un tamaño más pequeño (70% del tamaño de la cabeza)
+  botin.width = head.width * 0.7;
+  botin.height = head.height * 0.7;
 
-  // Posicionar el botín pegado a la parte inferior de la cabeza
-  botin.x = head.width; // El talón (anchor point) en el extremo derecho de la cabeza
-  botin.y = head.height + 20; // Ajustado 20 píxeles más abajo
+  // Ajustar la posición para mantener la alineación con la cabeza
+  botin.x = head.width - 2;
+  botin.y = head.height + 20; // Reducido de 30 a 20 para mantener la proporción
 
   player.addChild(botin);
   
   // Animation properties
+  // Modificar las propiedades de animación
   const originalBotinX = botin.x;
   const originalBotinY = botin.y;
-  const originalBotinRotation = 0; // Rotación inicial normal
+  const originalBotinRotation = 0;
   let isKicking = false;
-  let kickPhase = 0; // 0: no kicking, 1: rotación, 2: traslación
-
-  // Parámetros de la animación
-  const rotationDuration = 15; // Frames para la rotación
-  const translationDuration = 20; // Frames para la traslación
   let currentFrame = 0;
-  const startRotation = 0; // Comienza sin rotación
-  const finalRotation = -Math.PI / 2; // Punta hacia ARRIBA (-90 grados)
-  const parabolaHeight = head.height * 0.8; 
-  const parabolaWidth = head.width * 1.0; 
+
+  // Nuevos parámetros de animación
+  const preparationFrames = 5;
+  const kickFrames = 15;
+  const restorationFrames = 5;
+  const totalFrames = preparationFrames + kickFrames + restorationFrames;
+
+  // Ángulo inicial y rotación total (ajustados para movimiento hacia adelante)
+  const startAngle = Math.PI / 2; // Comenzamos desde 90 grados
+  const totalRotation = Math.PI / 2; // Rotación total de 60 grados (positivo para ir hacia adelante)
 
   // --- Keyboard Controls ---
   const keys = {};
@@ -114,16 +117,10 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
 
   window.addEventListener("keydown", (e) => {
     keys[e.code] = true;
-    if (e.code === "Space") {
-      console.log("Spacebar pressed, keys['Space'] set to:", keys["Space"]);
-    }
   });
 
   window.addEventListener("keyup", (e) => {
     keys[e.code] = false;
-    if (e.code === "Space") {
-      console.log("Spacebar released, keys['Space'] set to:", keys["Space"]);
-    }
   });
 
   app.ticker.add((ticker) => {
@@ -136,59 +133,61 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
     if (keys["ArrowRight"]) player.x += playerSpeed * delta;
 
     // Iniciar animación con la barra espaciadora
-    if (keys["Space"]) {
-        if (!isKicking) { // Si no está pateando actualmente, iniciar una nueva patada
-            isKicking = true;
-            kickPhase = 1;       // Forzar inicio en la fase de rotación
-            currentFrame = 0;    // Resetear el contador de frames
-            botin.rotation = startRotation; // Asegurar rotación inicial para la animación
-        }
+    if (keys["Space"] && !isKicking) {
+      isKicking = true;
+      currentFrame = 0;
     }
 
     // Kick animation
     if (isKicking) {
-        currentFrame++;
-        
-        if (kickPhase === 1) { // Fase de rotación
-            const rotationProgress = Math.min(currentFrame / rotationDuration, 1);
-            botin.rotation = startRotation + (finalRotation - startRotation) * rotationProgress;
-            
-            if (currentFrame >= rotationDuration) {
-                kickPhase = 2; // Pasar a la fase de traslación
-                currentFrame = 0; // Resetear frame para la nueva fase
-            }
-        } 
-        else if (kickPhase === 2) { // Fase de traslación
-            const progress = Math.min(currentFrame / translationDuration, 1);
-            
-            // Calcular desplazamiento en X (movimiento hacia adelante)
-            const dx = progress * parabolaWidth;
-            
-            // Calcular desplazamiento en Y para la parábola (hacia abajo y luego recupera)
-            // dy_offset será positivo, representando el descenso desde originalBotinY.
-            const dy_offset = 4 * parabolaHeight * progress * (1 - progress);
-            
-            // Aplicar posición relativa a la original
-            botin.x = originalBotinX + dx;
-            botin.y = originalBotinY + dy_offset; // Sumar dy_offset para mover hacia abajo
-            
-            if (currentFrame >= translationDuration) {
-                // Resetear la animación
-                isKicking = false;
-                kickPhase = 0; // Esencial para permitir la próxima patada
-                currentFrame = 0;
-                botin.x = originalBotinX;
-                botin.y = originalBotinY;
-                botin.rotation = originalBotinRotation;
-            }
-        }
-    }
-    
+    currentFrame++;
+
+    const maxHeight = 30;
+    const forwardDistance = 10;
+    const preparationPush = 60; // Desplazamiento inicial hacia adelante
+
+    if (currentFrame <= preparationFrames) {
+    // Fase de preparación: solo empujar hacia adelante
+    const prepProgress = currentFrame / preparationFrames;
+    botin.x = originalBotinX - (preparationPush * prepProgress);
+    botin.y = originalBotinY;
+    botin.rotation = originalBotinRotation;
+  }
+
+    else if (currentFrame <= preparationFrames + kickFrames) {
+    // Fase de patada: parábola + rotación
+    const kickProgress = (currentFrame - preparationFrames) / kickFrames;
+
+    const verticalOffset = 3 * maxHeight * kickProgress * (kickProgress - 1);
+    botin.y = originalBotinY + verticalOffset;
+
+    botin.x = originalBotinX - preparationPush - (forwardDistance * kickProgress);
+
+    botin.rotation = originalBotinRotation + (Math.PI / 2) * Math.sin(kickProgress * Math.PI);
+  }
+
+    else if (currentFrame <= totalFrames) {
+    // Fase de restauración: volver a la posición original
+    const restoreProgress = (currentFrame - preparationFrames - kickFrames) / restorationFrames;
+    botin.x = originalBotinX - preparationPush * (1 - restoreProgress);
+    botin.y = originalBotinY;
+    botin.rotation = originalBotinRotation;
+  }
+
+    else {
+    // Fin de la animación
+    isKicking = false;
+    currentFrame = 0;
+    botin.x = originalBotinX;
+    botin.y = originalBotinY;
+    botin.rotation = originalBotinRotation;
+  }
+}
+
+
     // Keep player within bounds
     player.x = Math.max(0, Math.min(app.screen.width - player.width, player.x));
     player.y = Math.max(0, Math.min(app.screen.height - player.height, player.y));
   });
 
 })();
-
-//Probando git lichicabj
