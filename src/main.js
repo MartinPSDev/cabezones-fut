@@ -353,7 +353,7 @@ import { Application, Assets, Sprite, Container } from "pixi.js";
       
       // Rotación realística de la pelota en su propio eje
       const totalVelocity = Math.sqrt(ballVelocityX * ballVelocityX + ballVelocityY * ballVelocityY);
-      ball.rotation += (totalVelocity * 0.04) * delta; // Rotación basada en velocidad total
+      ball.rotation += (totalVelocity * 0.06) * delta; // Rotación basada en velocidad total
     }
   });
 
